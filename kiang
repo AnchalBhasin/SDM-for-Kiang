@@ -1,5 +1,5 @@
 ## setup environment ----
-setwd('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/Argali_14')
+setwd('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/Kiang_14')
 
 ## install the latest release of biomod2
 
@@ -12,8 +12,8 @@ library(raster)
 library(rasterVis)
 
 ## read data ----
-Kiang_location <- read.csv('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/data/Argali_location.csv')
-summary(Argali_location)
+Kiang_location <- read.csv('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/data/Kiang_location.csv')
+summary(Kiang_location)
 
 bioclim_ZA_sub <- 
   raster::stack(
@@ -38,10 +38,10 @@ bioclim_ZA_sub <-
 bioclim_ZA_sub
 
 ## format the data ----
-Argali_data <- 
+Kiang_data <- 
   BIOMOD_FormatingData(
-    resp.var = Argali_location['Occupancy'],
-    resp.xy = Argali_location[, c('Long', 'Lat')],
+    resp.var = Kiang_location['Occupancy'],
+    resp.xy = Kiang_location[, c('Long', 'Lat')],
     expl.var = bioclim_ZA_sub,
     resp.name = "Occupancy",
     PA.nb.rep = 2,
@@ -50,13 +50,13 @@ Argali_data <-
   )
 
 ## formatted object summary
-Argali_data
+Kiang_data
 
 ## plot of selected pseudo-absences
-plot(Argali_data)
+plot(Kiang_data)
 
 ## define individual models options ---- 
-Argali_opt <- 
+Kiang_opt <- 
   BIOMOD_ModelingOptions(
     GLM = list(type = 'quadratic', interaction.level = 1),
     GBM = list(n.trees = 1000),
@@ -66,11 +66,11 @@ Argali_opt <-
   )
 
 ## run the individual models ----
-Argali_models <- 
+Kiang_models <- 
   BIOMOD_Modeling(
-    data = Argali_data,
+    data = Kiang_data,
     models = c("GLM", "GBM", "RF", "MARS", "MAXENT.Phillips"),
-    models.options = Argali_opt,
+    models.options = Kiang_opt,
     NbRunEval = 2,
     DataSplit = 75,
     VarImport = 3,
@@ -80,15 +80,15 @@ Argali_models <-
 ## asses individual models quality ----
 
 ## get models evaluation scores
-Argali_models_scores <- get_evaluations(Argali_models)
+Kiang_models_scores <- get_evaluations(Kiang_models)
 
 ## ProLau_models_scores is a 5 dimension array containing the scores of the models
-dim(Argali_models_scores)
-dimnames(Argali_models_scores)
+dim(Kiang_models_scores)
+dimnames(Kiang_models_scores)
 
 ## plot models evaluation scores
 models_scores_graph(
-  Argali_models, 
+  Kiang_models, 
   by = "models", 
   metrics = c("ROC","TSS"), 
   xlim = c(0.2,1), 
@@ -96,7 +96,7 @@ models_scores_graph(
 )
 
 models_scores_graph(
-  Argali_models, 
+  Kiang_models, 
   by = "cv_run" , 
   metrics = c("ROC","TSS"), 
   xlim = c(0.2,1), 
@@ -104,7 +104,7 @@ models_scores_graph(
 )
 
 models_scores_graph(
-  Argali_models, 
+  Kiang_models, 
   by = "data_set", 
   metrics = c("ROC","TSS"), 
   xlim = c(0.5,1), 
@@ -112,80 +112,80 @@ models_scores_graph(
 )
 
 ## check variable importance
-(Argali_models_var_import <- get_variables_importance(Argali_models))
+(Kiang_models_var_import <- get_variables_importance(Kiang_models))
 
 ## make the mean of variable importance by algorithm
-apply(Argali_models_var_import, c(1,2), mean)
+apply(Kiang_models_var_import, c(1,2), mean)
 
 ## individual models response plots
-Argali_glm <- BIOMOD_LoadModels(Argali_models, models='GLM')
-Argali_gbm <- BIOMOD_LoadModels(Argali_models, models='GBM')
-Argali_rf <- BIOMOD_LoadModels(Argali_models, models='RF')
-Argali_max <- BIOMOD_LoadModels(Argali_models, models='MAXENT.Phillips')
-Argali_mars <- BIOMOD_LoadModels(Argali_models, models='MARS')
+Kiang_glm <- BIOMOD_LoadModels(Kiang_models, models='GLM')
+Kiang_gbm <- BIOMOD_LoadModels(Kiang_models, models='GBM')
+Kiang_rf <- BIOMOD_LoadModels(Kiang_models, models='RF')
+Kiang_max <- BIOMOD_LoadModels(Kiang_models, models='MAXENT.Phillips')
+Kiang_mars <- BIOMOD_LoadModels(Kiang_models, models='MARS')
 glm_eval_strip <- 
   biomod2::response.plot2(
-    models  = Argali_glm,
-    Data = get_formal_data(Argali_models,'expl.var'), 
-    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    models  = Kiang_glm,
+    Data = get_formal_data(Kiang_models,'expl.var'), 
+    show.variables= get_formal_data(Kiang_models,'expl.var.names'),
     do.bivariate = FALSE,
     fixed.var.metric = 'median',
     legend = FALSE,
     display_title = FALSE,
-    data_species = get_formal_data(Argali_models,'resp.var')
+    data_species = get_formal_data(Kiang_models,'resp.var')
   )
 
 gbm_eval_strip <- 
   biomod2::response.plot2(
-    models  = Argali_gbm,
-    Data = get_formal_data(Argali_models,'expl.var'), 
-    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    models  = Kiang_gbm,
+    Data = get_formal_data(Kiang_models,'expl.var'), 
+    show.variables= get_formal_data(Kiang_models,'expl.var.names'),
     do.bivariate = FALSE,
     fixed.var.metric = 'median',
     legend = FALSE,
     display_title = FALSE,
-    data_species = get_formal_data(Argali_models,'resp.var')
+    data_species = get_formal_data(Kiang_models,'resp.var')
   )
 
 rf_eval_strip <- 
   biomod2::response.plot2(
-    models  = Argali_rf,
-    Data = get_formal_data(Argali_models,'expl.var'), 
-    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    models  = Kiang_rf,
+    Data = get_formal_data(Kiang_models,'expl.var'), 
+    show.variables= get_formal_data(Kiang_models,'expl.var.names'),
     do.bivariate = FALSE,
     fixed.var.metric = 'median',
     legend = FALSE,
     display_title = FALSE,
-    data_species = get_formal_data(Argali_models,'resp.var')
+    data_species = get_formal_data(Kiang_models,'resp.var')
   )
 
 max_eval_strip <- 
   biomod2::response.plot2(
-  models  = Argali_max,
-  Data = get_formal_data(Argali_models,'expl.var'), 
-  show.variables= get_formal_data(Argali_models,'expl.var.names'),
+  models  = Kiang_max,
+  Data = get_formal_data(Kiang_models,'expl.var'), 
+  show.variables= get_formal_data(Kiang_models,'expl.var.names'),
   do.bivariate = FALSE,
   fixed.var.metric = 'median',
   legend = FALSE,
   display_title = FALSE,
-  data_species = get_formal_data(Argali_models,'resp.var')
+  data_species = get_formal_data(Kiang_models,'resp.var')
 )
 mars_eval_strip <- 
   biomod2::response.plot2(
-    models  = Argali_mars,
-    Data = get_formal_data(Argali_models,'expl.var'), 
-    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    models  = Kiang_mars,
+    Data = get_formal_data(Kiang_models,'expl.var'), 
+    show.variables= get_formal_data(Kiang_models,'expl.var.names'),
     do.bivariate = FALSE,
     fixed.var.metric = 'median',
     legend = FALSE,
     display_title = FALSE,
-    data_species = get_formal_data(Argali_models,'resp.var')
+    data_species = get_formal_data(Kiang_models,'resp.var')
   )
 
 ## run the ensemble models ----
-Argali_ensemble_models <- 
+Kiang_ensemble_models <- 
   BIOMOD_EnsembleModeling(
-    modeling.output = Argali_models,
+    modeling.output = Kiang_models,
     em.by = 'all',
     eval.metric = 'TSS',
     eval.metric.quality.threshold = 0.8,
@@ -198,14 +198,14 @@ Argali_ensemble_models <-
   )
 
 ## asses ensemble models quality ----
-(Argali_ensemble_models_scores <- get_evaluations(Argali_ensemble_models))
+(Kiang_ensemble_models_scores <- get_evaluations(Kiang_ensemble_models))
 
 ## do models projections ----
 
 ## current projections
-Argali_models_proj_current <- 
+Kiang_models_proj_current <- 
   BIOMOD_Projection(
-    modeling.output = Argali_models,
+    modeling.output = Kiang_models,
     new.env = bioclim_ZA_sub,
     proj.name = "current",
     binary.meth = "TSS",
@@ -213,12 +213,12 @@ Argali_models_proj_current <-
     do.stack = FALSE
   )
 
-Argali_ensemble_models_proj_current <- 
+Kiang_ensemble_models_proj_current <- 
   BIOMOD_EnsembleForecasting(
-    EM.output = Argali_ensemble_models,
-    projection.output = Argali_models_proj_current,
+    EM.output = Kiang_ensemble_models,
+    projection.output = Kiang_models_proj_current,
     binary.meth = "TSS",
     output.format = ".img",
     do.stack = FALSE
   )
-plot(Argali_ensemble_models_proj_current, str.grep = "EMca|EMwmean")
+plot(Kiang_ensemble_models_proj_current, str.grep = "EMca|EMwmean")
