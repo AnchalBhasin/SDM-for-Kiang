@@ -1,0 +1,224 @@
+## setup environment ----
+setwd('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/Argali_14')
+
+## install the latest release of biomod2
+
+
+## load the required packages
+library(biomod2)
+library(ggplot2)
+library(gridExtra)
+library(raster)
+library(rasterVis)
+
+## read data ----
+Kiang_location <- read.csv('D:/biomod2_video_single_species_modelling/biomod2_video_single_species_modelling/data/Argali_location.csv')
+summary(Argali_location)
+
+bioclim_ZA_sub <- 
+  raster::stack(
+    c(
+      bio_12 = '../data/worldclim_kiang/bio_12_chang_img.asc',
+      bio_1 = '../data/worldclim_kiang/bio_1_chang_img.asc',
+      bio_2 = '../data/worldclim_kiang/bio2_asc_asc.asc',
+      bio_3 = '../data/worldclim_kiang/bio3_asc_asc.asc',
+      bio_19 = '../data/worldclim_kiang/bio19_asc_asc.asc',
+      bio_4  = '../data/worldclim_kiang/bio_4_chang_img.asc',
+      bio_18  = '../data/worldclim_kiang/bio_18_img_asc.asc',
+      bio_15  = '../data/worldclim_kiang/bio_15_img_asc.asc',
+      bio_9  = '../data/worldclim_kiang/bio_9_img_asc.asc',
+      lulc   = '../data/worldclim_kiang/lulc_chang_img.asc',
+      TRI    = '../data/worldclim_kiang/tri_chang_img.asc',
+      slope_c= '../data/worldclim_kiang/slope_chang_img.asc',
+      aspect = '../data/worldclim_kiang/aspect_chang_img.asc'
+    
+    )
+  )
+
+bioclim_ZA_sub
+
+## format the data ----
+Argali_data <- 
+  BIOMOD_FormatingData(
+    resp.var = Argali_location['Occupancy'],
+    resp.xy = Argali_location[, c('Long', 'Lat')],
+    expl.var = bioclim_ZA_sub,
+    resp.name = "Occupancy",
+    PA.nb.rep = 2,
+    PA.nb.absences = 100,
+    PA.strategy = 'random'
+  )
+
+## formatted object summary
+Argali_data
+
+## plot of selected pseudo-absences
+plot(Argali_data)
+
+## define individual models options ---- 
+Argali_opt <- 
+  BIOMOD_ModelingOptions(
+    GLM = list(type = 'quadratic', interaction.level = 1),
+    GBM = list(n.trees = 1000),
+    MARS = list(type = 'quadratic', interaction.level = 1),
+    MAXENT.Phillips = list(path_to_maxent.jar = 'D:/maxent/maxent'),
+    RF = list(n.trees = 1000)
+  )
+
+## run the individual models ----
+Argali_models <- 
+  BIOMOD_Modeling(
+    data = Argali_data,
+    models = c("GLM", "GBM", "RF", "MARS", "MAXENT.Phillips"),
+    models.options = Argali_opt,
+    NbRunEval = 2,
+    DataSplit = 75,
+    VarImport = 3,
+    modeling.id = "demo1"
+  )
+
+## asses individual models quality ----
+
+## get models evaluation scores
+Argali_models_scores <- get_evaluations(Argali_models)
+
+## ProLau_models_scores is a 5 dimension array containing the scores of the models
+dim(Argali_models_scores)
+dimnames(Argali_models_scores)
+
+## plot models evaluation scores
+models_scores_graph(
+  Argali_models, 
+  by = "models", 
+  metrics = c("ROC","TSS"), 
+  xlim = c(0.2,1), 
+  ylim = c(0.2,1)
+)
+
+models_scores_graph(
+  Argali_models, 
+  by = "cv_run" , 
+  metrics = c("ROC","TSS"), 
+  xlim = c(0.2,1), 
+  ylim = c(0.2,1)
+)
+
+models_scores_graph(
+  Argali_models, 
+  by = "data_set", 
+  metrics = c("ROC","TSS"), 
+  xlim = c(0.5,1), 
+  ylim = c(0.5,1)
+)
+
+## check variable importance
+(Argali_models_var_import <- get_variables_importance(Argali_models))
+
+## make the mean of variable importance by algorithm
+apply(Argali_models_var_import, c(1,2), mean)
+
+## individual models response plots
+Argali_glm <- BIOMOD_LoadModels(Argali_models, models='GLM')
+Argali_gbm <- BIOMOD_LoadModels(Argali_models, models='GBM')
+Argali_rf <- BIOMOD_LoadModels(Argali_models, models='RF')
+Argali_max <- BIOMOD_LoadModels(Argali_models, models='MAXENT.Phillips')
+Argali_mars <- BIOMOD_LoadModels(Argali_models, models='MARS')
+glm_eval_strip <- 
+  biomod2::response.plot2(
+    models  = Argali_glm,
+    Data = get_formal_data(Argali_models,'expl.var'), 
+    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    do.bivariate = FALSE,
+    fixed.var.metric = 'median',
+    legend = FALSE,
+    display_title = FALSE,
+    data_species = get_formal_data(Argali_models,'resp.var')
+  )
+
+gbm_eval_strip <- 
+  biomod2::response.plot2(
+    models  = Argali_gbm,
+    Data = get_formal_data(Argali_models,'expl.var'), 
+    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    do.bivariate = FALSE,
+    fixed.var.metric = 'median',
+    legend = FALSE,
+    display_title = FALSE,
+    data_species = get_formal_data(Argali_models,'resp.var')
+  )
+
+rf_eval_strip <- 
+  biomod2::response.plot2(
+    models  = Argali_rf,
+    Data = get_formal_data(Argali_models,'expl.var'), 
+    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    do.bivariate = FALSE,
+    fixed.var.metric = 'median',
+    legend = FALSE,
+    display_title = FALSE,
+    data_species = get_formal_data(Argali_models,'resp.var')
+  )
+
+max_eval_strip <- 
+  biomod2::response.plot2(
+  models  = Argali_max,
+  Data = get_formal_data(Argali_models,'expl.var'), 
+  show.variables= get_formal_data(Argali_models,'expl.var.names'),
+  do.bivariate = FALSE,
+  fixed.var.metric = 'median',
+  legend = FALSE,
+  display_title = FALSE,
+  data_species = get_formal_data(Argali_models,'resp.var')
+)
+mars_eval_strip <- 
+  biomod2::response.plot2(
+    models  = Argali_mars,
+    Data = get_formal_data(Argali_models,'expl.var'), 
+    show.variables= get_formal_data(Argali_models,'expl.var.names'),
+    do.bivariate = FALSE,
+    fixed.var.metric = 'median',
+    legend = FALSE,
+    display_title = FALSE,
+    data_species = get_formal_data(Argali_models,'resp.var')
+  )
+
+## run the ensemble models ----
+Argali_ensemble_models <- 
+  BIOMOD_EnsembleModeling(
+    modeling.output = Argali_models,
+    em.by = 'all',
+    eval.metric = 'TSS',
+    eval.metric.quality.threshold = 0.8,
+    models.eval.meth = c('TSS','ROC'),
+    prob.mean = FALSE,
+    prob.cv = TRUE, 
+    committee.averaging = TRUE,
+    prob.mean.weight = TRUE,
+    VarImport = 0
+  )
+
+## asses ensemble models quality ----
+(Argali_ensemble_models_scores <- get_evaluations(Argali_ensemble_models))
+
+## do models projections ----
+
+## current projections
+Argali_models_proj_current <- 
+  BIOMOD_Projection(
+    modeling.output = Argali_models,
+    new.env = bioclim_ZA_sub,
+    proj.name = "current",
+    binary.meth = "TSS",
+    output.format = ".img",
+    do.stack = FALSE
+  )
+
+Argali_ensemble_models_proj_current <- 
+  BIOMOD_EnsembleForecasting(
+    EM.output = Argali_ensemble_models,
+    projection.output = Argali_models_proj_current,
+    binary.meth = "TSS",
+    output.format = ".img",
+    do.stack = FALSE
+  )
+plot(Argali_ensemble_models_proj_current, str.grep = "EMca|EMwmean")
