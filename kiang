@@ -82,7 +82,7 @@ Kiang_models <-
 ## get models evaluation scores
 Kiang_models_scores <- get_evaluations(Kiang_models)
 
-## ProLau_models_scores is a 5 dimension array containing the scores of the models
+## Kiang_models_scores is a 5 dimension array containing the scores of the models
 dim(Kiang_models_scores)
 dimnames(Kiang_models_scores)
 
